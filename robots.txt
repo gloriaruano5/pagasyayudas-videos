@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://gloriaruano5.github.io/pagasyayudas-videos/sitemap.xml

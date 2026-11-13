@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ayudas en toda España 2026 | Pagas y Ayudas</title>
+<meta name="description" content="Ayudas, becas, pagas y desgravaciones que se pueden pedir en toda España, con requisitos, plazo y fuente oficial.">
+<link rel="canonical" href="https://gloriaruano5.github.io/pagasyayudas-videos/ayudas-en/espana/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ayudas en toda España 2026 | Pagas y Ayudas">
+<meta property="og:description" content="Ayudas, becas, pagas y desgravaciones que se pueden pedir en toda España, con requisitos, plazo y fuente oficial.">
+<meta property="og:locale" content="es_ES">
+<meta property="og:site_name" content="Pagas y Ayudas">
+<link rel="icon" href="../../icono.png">
+<link rel="stylesheet" href="../../estilo.css">
+</head>
+<body>
+<header class="cab"><div class="ancho">
+<a class="marca" href="../../">Pagas <b>y</b> Ayudas</a>
+<nav><a href="../../">Todas</a><a href="../../aviso-legal/">Quiénes somos</a></nav>
+</div></header>
+<div class="heroe"><div class="ancho">
+<p class="migas"><a href="../../">Inicio</a> › Ayudas por comunidad</p>
+<h1>Ayudas, becas y pagas en toda España (2026)</h1>
+<p>6 fichas con la cuantía, los requisitos, el plazo y la fuente oficial.</p>
+</div></div>
+<main class="ancho">
+<ul class="lista"><li data-terr="España" data-tipo="Desgravaciones" data-cierre="2026-12-31">
+<a class="tarjeta" href="../../ayudas/deduccion-donativos/">
+<span class="num"><small>HACIENDA TE DESCUENTA EL</small>80 %</span>
+<h3>¿Donas a una ONG? Hacienda te descuenta el 80 % (dona antes del 31 de diciembre)</h3>
+<span class="pie"><span class="pastilla">ANTES DEL 31 DE DIC.</span> <span>Desgravaciones · España</span></span>
+</a></li><li data-terr="España" data-tipo="Pagas">
+<a class="tarjeta" href="../../ayudas/paga-extra-pensiones/">
+<span class="num"><small>EN NOVIEMBRE</small>PAGA EXTRA</span>
+<h3>¿Cobras pensión? En noviembre llega la paga extra</h3>
+<span class="pie"><span class="pastilla">LLEGA ESTE MES</span> <span>Pagas · España</span></span>
+</a></li><li data-terr="España" data-tipo="Pagas">
+<a class="tarjeta" href="../../ayudas/pension-no-contributiva/">
+<span class="num"><small>PENSIÓN DE HASTA</small>628 €/mes</span>
+<h3>¿65 años y no has cotizado? Puedes cobrar hasta 628 € al mes</h3>
+<span class="pie"><span class="pastilla">SE PIDE TODO EL AÑO</span> <span>Pagas · España</span></span>
+</a></li><li data-terr="España" data-tipo="Desgravaciones">
+<a class="tarjeta" href="../../ayudas/deduccion-maternidad/">
+<span class="num"><small>HACIENDA TE DA HASTA</small>2.200 €</span>
+<h3>¿Hijo menor de 3 años? Hacienda te da hasta 1.200 € al año (+1.000 € de guardería)</h3>
+<span class="pie"><span class="pastilla">AUNQUE NO PAGUES IRPF</span> <span>Desgravaciones · España</span></span>
+</a></li><li data-terr="España" data-tipo="Pagas">
+<a class="tarjeta" href="../../ayudas/permiso-nacimiento/">
+<span class="num"><small>PERMISO PAGADO DE</small>19 semanas</span>
+<h3>¿Vas a tener un hijo? 19 semanas de permiso cobrando el 100 %</h3>
+<span class="pie"><span class="pastilla">CADA PROGENITOR</span> <span>Pagas · España</span></span>
+</a></li><li data-terr="España" data-tipo="Desgravaciones">
+<a class="tarjeta" href="../../ayudas/deduccion-familia-numerosa/">
+<span class="num"><small>HACIENDA OS DA</small>1.200 €</span>
+<h3>¿Sois familia numerosa? Hacienda os da 1.200 € al año (2.400 € si es especial)</h3>
+<span class="pie"><span class="pastilla">AUNQUE NO PAGUES IRPF</span> <span>Desgravaciones · España</span></span>
+</a></li></ul>
+
+<p style="margin-top:20px"><a class="boton" href="../../">Todas las ayudas</a></p>
+</main>
+<footer><div class="ancho">
+<p><strong>Pagas y Ayudas</strong> es un proyecto divulgativo independiente.
+No es un organismo público ni tramita ayudas.</p>
+<p>La información sale de fuentes oficiales, enlazadas en cada ficha. No sustituye a la convocatoria
+ni es asesoramiento: comprueba siempre tu caso en el organismo que la concede.</p>
+<p><a href="https://www.instagram.com/pagasyayudas/" rel="me noopener">Instagram</a> · <a href="https://www.tiktok.com/@pagasyayudas" rel="me noopener">TikTok</a> · <a href="https://www.youtube.com/channel/UCy6lqC7oXe0K668JDnM-NSQ" rel="me noopener">YouTube</a> · <a href="../../aviso-legal/">Aviso legal y privacidad</a></p>
+</div></footer>
+<script>
+// La página es estática: si nadie la regenera el día que vence un plazo,
+// este repaso evita que siga diciendo «hasta el 30 de nov.» una semana después.
+(function(){var h=new Date();h.setHours(0,0,0,0);
+document.querySelectorAll('[data-cierre]').forEach(function(e){
+var p=e.dataset.cierre.split('-');if(new Date(p[0],p[1]-1,p[2])<h){
+e.classList.add('cerrada');var t=e.querySelector('.pastilla');
+if(t){t.classList.add('cerrada');t.textContent='Plazo cerrado';}
+var a=e.querySelector('.aviso-cierre');if(a)a.hidden=false;}});})();
+</script>
+</body>
+</html>
