@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>¿Cómo va lo mío?</title>
+<meta name="description" content="Seguimiento de encargos para talleres y pequeños negocios: el cliente ve cómo va su pedido sin tener que llamar.">
+<meta name="theme-color" content="#2b2350">
+<style>
+:root{--mora:#2b2350;--lila:#5b47c9;--sol:#ffd166;--rojo:#c0392b;--verde:#1f8a5b;--fondo:#f5f4fa;--papel:#fff;--tinta:#1c1a2b;--suave:#615d78;--raya:#dcd9ea}
+@media (prefers-color-scheme:dark){:root{--fondo:#12101d;--papel:#1d1a2e;--tinta:#f1effa;--suave:#b0abc9;--raya:#34304d;--lila:#a495ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--fondo);color:var(--tinta);font:17px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+header{background:var(--mora);color:#fff;padding:14px 16px}header h1{margin:0;font-size:1.2rem}header h1 b{color:var(--sol)}header p{margin:2px 0 0;font-size:.85rem;color:#cdc8e6}
+main{max-width:720px;margin:0 auto;padding:14px 14px 90px}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--papel);border-top:1px solid var(--raya);display:flex;z-index:5}
+nav button{flex:1;border:0;background:none;color:var(--suave);font:inherit;font-size:.85rem;padding:12px 4px 14px;cursor:pointer}
+nav button[aria-current=page]{color:var(--lila);font-weight:700;box-shadow:inset 0 3px 0 var(--lila)}
+h2{font-size:1.05rem;margin:18px 0 8px}h3{font-size:1rem;margin:0}
+.caja{background:var(--papel);border:1px solid var(--raya);border-radius:12px;padding:14px;margin-bottom:10px}
+.fila{display:block;width:100%;text-align:left;background:var(--papel);border:1px solid var(--raya);border-radius:12px;padding:12px;margin-bottom:8px;font:inherit;color:inherit;cursor:pointer}
+.fila:hover{border-color:var(--lila)}.fila strong{display:block;overflow-wrap:anywhere}.fila .meta{font-size:.85rem;color:var(--suave)}
+.barra{display:flex;gap:3px;margin:8px 0 6px}.barra i{flex:1;height:6px;border-radius:3px;background:var(--raya)}.barra i.si{background:var(--lila)}
+.chip{display:inline-block;font-size:.72rem;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.chip.tarde{background:#fde8e6;color:#8c2318}.chip.fase{background:#e8e4ff;color:#3a2a9c}.chip.ok{background:#dff5ea;color:#145c40}
+button.b,a.b{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--lila);background:var(--lila);color:#fff;font:inherit;font-weight:700;border-radius:10px;padding:10px 14px;cursor:pointer;text-decoration:none;margin:4px 6px 4px 0}
+@media (prefers-color-scheme:dark){button.b,a.b{color:#12101d}}
+button.b.sec,a.b.sec{background:transparent;color:var(--lila)}button.b.pel{border-color:var(--rojo);background:transparent;color:var(--rojo)}
+label{display:block;font-size:.85rem;color:var(--suave);margin:10px 0 3px}
+input,select,textarea{width:100%;font:inherit;padding:10px 11px;border:1px solid var(--raya);border-radius:10px;background:var(--papel);color:var(--tinta)}
+:focus-visible{outline:3px solid var(--sol);outline-offset:2px}
+dialog{border:0;border-radius:16px;padding:0;width:min(560px,94vw);max-height:90vh;background:var(--papel);color:var(--tinta)}
+dialog::backdrop{background:rgba(0,0,0,.5)}dialog .dentro{padding:16px}
+.nota{font-size:.85rem;color:var(--suave)}.vacio{text-align:center;color:var(--suave);padding:26px 10px}
+.entre{display:flex;justify-content:space-between;align-items:center;gap:8px}
+pre.msg{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--fondo);border-radius:10px;padding:10px;font:inherit;font-size:.92rem;margin:8px 0}
+/* Página que ve el cliente */
+.cli{max-width:520px;margin:0 auto;padding:22px 16px 40px}.cli .neg{font-weight:800;color:var(--lila);letter-spacing:.02em}
+.cli h1{font-size:1.5rem;line-height:1.25;margin:6px 0 2px}.pasos{list-style:none;padding:0;margin:18px 0}
+.pasos li{position:relative;padding:0 0 20px 38px;color:var(--suave)}.pasos li::before{content:"";position:absolute;left:8px;top:4px;width:16px;height:16px;border-radius:50%;border:3px solid var(--raya);background:var(--papel)}
+.pasos li::after{content:"";position:absolute;left:15px;top:24px;bottom:0;width:3px;background:var(--raya)}.pasos li:last-child::after{display:none}
+.pasos li.hecho{color:var(--tinta)}.pasos li.hecho::before{background:var(--lila);border-color:var(--lila)}.pasos li.hecho::after{background:var(--lila)}
+.pasos li.ahora{color:var(--tinta);font-weight:800;font-size:1.15rem}.pasos li.ahora::before{border-color:var(--lila);box-shadow:0 0 0 5px rgba(91,71,201,.2)}
+.cli .pie{margin-top:26px;font-size:.85rem;color:var(--suave);text-align:center}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<dialog id="dlg"><div class="dentro" id="dlgc"></div></dialog>
+<script>
+"use strict";
+// ───── Configuración comercial: lo único que hay que tocar antes de vender ─────
+const VENTA = {
+  gratis: 5,            // encargos abiertos a la vez sin licencia
+  precio: "12 € al mes o 120 € al año",
+  pago: "",             // enlace de pago. Vacío = no se enseña botón
+  contacto: "",         // correo o teléfono para pedir la licencia
+  promo: "https://gloriaruano5.github.io/pagasyayudas-videos/herramientas/como-va-lo-mio/"             // dirección de la página de venta: sale al pie de lo que ve el cliente
+};
+const SAL = "como-va-lo-mio/2026";  // debe coincidir con licencias.py
+const FASES = ["Recibido","En preparación","En marcha","Listo para recoger","Entregado"];
+const MESL = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+
+const $ = s => document.querySelector(s);
+const h = t => String(t ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const iso = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+const fecha = s => { const [a,m,d] = s.split("-").map(Number); return new Date(a, m-1, d); };
+const hoy = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
+const dias = s => Math.round((fecha(s) - hoy()) / 864e5);
+const larga = s => { const d = fecha(s); return DIAS[d.getDay()] + " " + d.getDate() + " de " + MESL[d.getMonth()]; };
+function telefono(t){ let n = String(t||"").replace(/\D/g,""); if (n.length === 9) n = "34" + n; return n; }
+
+// ───── El enlace que ve el cliente ─────
+// No hay servidor: el estado del encargo viaja dentro del propio enlace. Por eso
+// cada cambio de fase genera un enlace nuevo, y por eso lleva solo lo imprescindible
+// (nombre de pila y descripción), nunca el teléfono ni el apellido del cliente.
+function codificar(o){ const b = new TextEncoder().encode(JSON.stringify(o)); let s = ""; b.forEach(x => s += String.fromCharCode(x));
+  return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
+function descodificar(t){ const s = atob(t.replace(/-/g,"+").replace(/_/g,"/")); return JSON.parse(new TextDecoder().decode(Uint8Array.from(s, c => c.charCodeAt(0)))); }
+const publicable = () => location.protocol === "http:" || location.protocol === "https:";
+function enlace(p){
+  return location.origin + location.pathname + "#e=" + codificar({n:S.negocio.nombre, t:telefono(S.negocio.telefono), c:p.cliente.split(" ")[0], p:p.titulo,
+    f:S.fases, i:p.fase, d:p.fecha, o:p.nota, u:iso(hoy())});
+}
+function vistaCliente(e){
+  document.title = "Tu encargo · " + (e.n || "");
+  const fin = e.i >= e.f.length - 1;
+  $("#app").innerHTML = '<div class="cli"><div class="neg">' + h(e.n || "Tu encargo") + '</div><h1>' + h(e.c ? "Hola, " + e.c + "." : "Hola.") + '</h1>' +
+    '<p>Así va <strong>' + h(e.p) + '</strong>:</p><ol class="pasos">' + e.f.map((f,i) => '<li class="' + (i < e.i || (fin && i === e.i) ? "hecho" : i === e.i ? "ahora" : "") + '">' + h(f) +
+      (i === e.i && !fin ? '<br><span class="nota" style="font-weight:400">Estamos aquí</span>' : "") + '</li>').join("") + '</ol>' +
+    // Una fecha ya pasada no se le enseña al cliente como si siguiera en pie.
+    (e.d && !fin ? (dias(e.d) >= 0 ? '<div class="caja"><span class="nota">Fecha prevista</span><br><strong style="font-size:1.2rem">' + larga(e.d) + '</strong></div>'
+      : '<div class="caja"><strong>Va con algo de retraso sobre lo previsto.</strong><br><span class="nota">Te avisamos en cuanto esté.</span></div>') : "") +
+    (e.o ? '<div class="caja"><span class="nota">Nota</span><br>' + h(e.o) + '</div>' : "") +
+    (e.t ? '<a class="b" href="https://wa.me/' + h(e.t) + '">Escribir por WhatsApp</a><a class="b sec" href="tel:+' + h(e.t) + '">Llamar</a>' : "") +
+    '<p class="pie">Actualizado el ' + (e.u ? larga(e.u) : "") + '. Si te envían un enlace nuevo, ese es el bueno.' +
+    (VENTA.promo ? '<br><a href="' + h(VENTA.promo) + '">¿Tienes un negocio? Avisa así a tus clientes, gratis.</a>' : "") + '</p></div>';
+}
+
+// ───── Estado del negocio ─────
+const CLAVE = "como-va-lo-mio";
+let S = {v:1, negocio:{nombre:"",telefono:""}, fases:FASES.slice(), pedidos:[], licencia:""};
+try { const g = JSON.parse(localStorage.getItem(CLAVE)); if (g && g.v === 1) S = g; } catch (x) {}
+const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify(S)); } catch (x) {} };
+let vista = "encargos";
+const ultima = () => S.fases.length - 1;
+const abiertos = () => S.pedidos.filter(p => p.fase < ultima());
+
+function fnv(s){ let x = 0x811c9dc5; for (let i = 0; i < s.length; i++){ x ^= s.charCodeAt(i); x = Math.imul(x, 0x01000193) >>> 0; } return x; }
+function licenciaValida(k){
+  const m = /^CVM-(\d{2})(\d{2})-([0-9A-Z]{6})$/.exec(String(k||"").trim().toUpperCase());
+  if (!m) return false;
+  if (fnv(SAL + m[1] + m[2]).toString(36).toUpperCase().padStart(6,"0").slice(-6) !== m[3]) return false;
+  return new Date(2000 + +m[1], +m[2], 1) > new Date();
+}
+const conLicencia = () => licenciaValida(S.licencia);
+
+function mensaje(p){
+  const fin = p.fase >= ultima();
+  let m = "Hola, " + p.cliente.split(" ")[0] + ". " + (S.negocio.nombre ? "Somos " + S.negocio.nombre + ". " : "") + "Tu encargo «" + p.titulo + "» está: " + S.fases[p.fase].toUpperCase() + ".";
+  if (p.fecha && !fin) m += dias(p.fecha) >= 0 ? " Fecha prevista: " + larga(p.fecha) + "." : " Va con algo de retraso sobre lo previsto.";
+  if (p.nota) m += " " + p.nota;
+  if (publicable()) m += "\nPuedes ver cómo va aquí: " + enlace(p);
+  return m;
+}
+function filaPedido(p){
+  const tarde = p.fecha && p.fase < ultima() && dias(p.fecha) < 0;
+  return '<button class="fila" data-pedido="' + p.id + '"><div class="entre"><strong>' + h(p.titulo) + '</strong>' +
+    (tarde ? '<span class="chip tarde">Con retraso</span>' : p.fase >= ultima() ? '<span class="chip ok">Entregado</span>' : '<span class="chip fase">' + h(S.fases[p.fase]) + '</span>') + '</div>' +
+    '<div class="barra">' + S.fases.map((f,i) => '<i class="' + (i <= p.fase ? "si" : "") + '"></i>').join("") + '</div>' +
+    '<span class="meta">' + h(p.cliente) + (p.fecha && p.fase < ultima() ? " · previsto el " + larga(p.fecha) : "") + '</span></button>';
+}
+function vistaEncargos(){
+  const ab = abiertos().sort((a,b) => (a.fecha || "9").localeCompare(b.fecha || "9")), he = S.pedidos.filter(p => p.fase >= ultima());
+  const tarde = ab.filter(p => p.fecha && dias(p.fecha) < 0).length, listos = ab.filter(p => p.fase === ultima() - 1).length;
+  if (!S.pedidos.length) return '<div class="caja vacio"><p><strong>Aún no hay encargos.</strong></p><p>Apunta el primero o carga un ejemplo para ver cómo lo recibe el cliente.</p>' +
+    '<button class="b" data-accion="nuevo">Nuevo encargo</button><button class="b sec" data-accion="ejemplo">Cargar ejemplo</button></div>';
+  return '<div class="entre"><h2>En curso (' + ab.length + ')</h2><button class="b" data-accion="nuevo">Nuevo</button></div>' +
+    (tarde || listos ? '<p class="nota">' + [tarde ? tarde + " con retraso" : "", listos ? listos + " esperando a que el cliente pase" : ""].filter(Boolean).join(" · ") + '</p>' : "") +
+    (ab.length ? ab.map(filaPedido).join("") : '<div class="caja vacio">Nada en curso.</div>') +
+    (he.length ? '<details><summary><h2 style="display:inline-block">Entregados (' + he.length + ')</h2></summary>' + he.map(filaPedido).join("") + '</details>' : "") +
+    (!conLicencia() ? '<p class="nota">Versión gratuita: hasta ' + VENTA.gratis + ' encargos abiertos a la vez. <a href="#" data-accion="licencia">Quitar el límite</a></p>' : "");
+}
+function vistaAjustes(){
+  return '<div class="caja"><h3>Tu negocio</h3><label for="a-nombre">Nombre (lo ve el cliente)</label><input id="a-nombre" value="' + h(S.negocio.nombre) + '">' +
+    '<label for="a-tel">Teléfono (para que el cliente te escriba)</label><input id="a-tel" type="tel" value="' + h(S.negocio.telefono) + '">' +
+    '<label for="a-fases">Fases de un encargo, una por línea (la última es «entregado»)</label><textarea id="a-fases" rows="5">' + h(S.fases.join("\n")) + '</textarea>' +
+    '<button class="b" data-accion="guardar-ajustes">Guardar</button></div>' +
+    '<div class="caja"><h3>Licencia</h3><p class="nota">' + (conLicencia() ? "Licencia activa: encargos sin límite." : "Versión gratuita: hasta " + VENTA.gratis + " encargos abiertos a la vez.") + '</p>' +
+    '<button class="b sec" data-accion="licencia">' + (conLicencia() ? "Cambiar la clave" : "Tengo una clave") + '</button></div>' +
+    '<div class="caja"><h3>Tus datos</h3><p class="nota">Todo se guarda solo en este dispositivo. Haz una copia de vez en cuando.</p>' +
+    '<button class="b sec" data-accion="exportar">Descargar copia</button><button class="b sec" data-accion="importar">Restaurar copia</button><input type="file" id="fichero" accept="application/json" hidden>' +
+    '<button class="b pel" data-accion="borrar-todo">Borrar todo</button></div>';
+}
+function pintar(){
+  $("#app").innerHTML = '<header><h1>¿Cómo va <b>lo mío?</b></h1><p>' + h(S.negocio.nombre || "Que el cliente lo sepa sin tener que llamar") + '</p></header><main>' +
+    (vista === "encargos" ? vistaEncargos() : vistaAjustes()) + '</main><nav><button data-ir="encargos"' + (vista === "encargos" ? ' aria-current="page"' : "") + '>Encargos</button>' +
+    '<button data-ir="ajustes"' + (vista === "ajustes" ? ' aria-current="page"' : "") + '>Ajustes</button></nav>';
+}
+const dlg = $("#dlg");
+// El id abierto va en una variable y no como data-* del <dialog>: el clic general
+// lo tomaría por una fila de la lista y repintaría antes de aplicar el cambio.
+const abierta = {};
+function abrir(html){ $("#dlgc").innerHTML = html; if (!dlg.open) dlg.showModal(); }
+const cerrar = () => dlg.open && dlg.close();
+function dlgPedido(id){
+  const p = S.pedidos.find(x => x.id === id); if (!p) return cerrar();
+  const tel = telefono(p.telefono), m = mensaje(p);
+  abrir('<div class="entre"><h3>' + h(p.titulo) + '</h3><button class="b sec" data-accion="cerrar" aria-label="Cerrar">✕</button></div><p class="nota">' + h(p.cliente) + (p.avisado ? " · avisado el " + larga(p.avisado) : "") + '</p>' +
+    '<label for="p-fase">Fase</label><select id="p-fase">' + S.fases.map((f,i) => '<option value="' + i + '"' + (i === p.fase ? " selected" : "") + '>' + h(f) + '</option>').join("") + '</select>' +
+    (p.fase < ultima() ? '<button class="b" data-accion="avanzar">Pasar a «' + h(S.fases[p.fase + 1]) + '»</button>' : "") +
+    '<label for="p-fecha">Fecha prevista</label><input id="p-fecha" type="date" value="' + h(p.fecha) + '">' +
+    '<label for="p-nota">Nota para el cliente</label><input id="p-nota" value="' + h(p.nota) + '" placeholder="Por ejemplo: falta una pieza, llega el jueves">' +
+    '<h3 style="margin-top:14px">Aviso para el cliente</h3><pre class="msg" id="p-msg">' + h(m) + '</pre>' +
+    (tel ? '<a class="b" data-accion="avisado" target="_blank" rel="noopener" href="https://wa.me/' + tel + '?text=' + encodeURIComponent(m) + '">WhatsApp</a>' : '<span class="nota">Sin teléfono: copia el mensaje. </span>') +
+    '<button class="b sec" data-accion="copiar">Copiar</button>' + (publicable() ? '<a class="b sec" target="_blank" rel="noopener" href="' + h(enlace(p)) + '">Ver como el cliente</a>' : "") +
+    (!publicable() ? '<p class="nota">El enlace de seguimiento aparece cuando la herramienta está publicada en una dirección web.</p>' : "") +
+    '<div style="margin-top:8px"><button class="b pel" data-accion="borrar">Borrar encargo</button></div>');
+  abierta.pedido = id;
+}
+function dlgNuevo(){
+  const d = hoy(); d.setDate(d.getDate() + 7);
+  abrir('<h3>Nuevo encargo</h3><label for="n-titulo">Qué es</label><input id="n-titulo" placeholder="Por ejemplo: tapizar dos sillones">' +
+    '<label for="n-cliente">Cliente</label><input id="n-cliente"><label for="n-tel">Teléfono del cliente (para WhatsApp)</label><input id="n-tel" type="tel">' +
+    '<label for="n-fecha">Fecha prevista</label><input id="n-fecha" type="date" value="' + iso(d) + '">' +
+    '<div style="margin-top:10px"><button class="b" data-accion="crear">Guardar</button><button class="b sec" data-accion="cerrar">Cancelar</button></div>');
+}
+function dlgLicencia(){
+  abrir('<h3>Encargos sin límite</h3><p>La versión gratuita lleva hasta ' + VENTA.gratis + ' encargos abiertos a la vez. La licencia quita el límite: ' + h(VENTA.precio) + '.</p>' +
+    (VENTA.pago ? '<a class="b" href="' + h(VENTA.pago) + '" target="_blank" rel="noopener">Comprar licencia</a>' : "") +
+    '<p class="nota">' + (VENTA.contacto ? "Pídela en " + h(VENTA.contacto) + "." : "Pide tu clave a quien te ha facilitado esta herramienta.") + '</p>' +
+    '<label for="l-clave">Clave de licencia</label><input id="l-clave" placeholder="CVM-0000-XXXXXX" value="' + h(S.licencia) + '"><p class="nota" id="l-msg" role="status"></p>' +
+    '<button class="b" data-accion="activar">Activar</button><button class="b sec" data-accion="cerrar">Cerrar</button>');
+}
+function descargar(nombre, texto){ const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([texto], {type:"application/json"})); a.download = nombre; document.body.appendChild(a); a.click(); a.remove(); }
+const actual = () => S.pedidos.find(x => x.id === abierta.pedido);
+const ACC = {
+  cerrar,
+  nuevo(){ if (!conLicencia() && abiertos().length >= VENTA.gratis) return dlgLicencia(); dlgNuevo(); },
+  crear(){ const t = $("#n-titulo").value.trim(), c = $("#n-cliente").value.trim(); if (!t) return $("#n-titulo").focus(); if (!c) return $("#n-cliente").focus();
+    const p = {id:uid(), titulo:t, cliente:c, telefono:$("#n-tel").value.trim(), fecha:$("#n-fecha").value, fase:0, nota:"", avisado:""}; S.pedidos.push(p); guardar(); pintar(); dlgPedido(p.id); },
+  avanzar(){ const p = actual(); p.fase = Math.min(ultima(), p.fase + 1); guardar(); pintar(); dlgPedido(p.id); },
+  avisado(){ actual().avisado = iso(hoy()); guardar(); return true; },
+  copiar(){ navigator.clipboard && navigator.clipboard.writeText($("#p-msg").textContent); },
+  borrar(){ if (!confirm("¿Borrar este encargo?")) return; S.pedidos = S.pedidos.filter(p => p.id !== abierta.pedido); guardar(); cerrar(); pintar(); },
+  ejemplo(){ const mk = (t,c,tel,f,n,nota) => { const d = hoy(); d.setDate(d.getDate() + n); S.pedidos.push({id:uid(), titulo:t, cliente:c, telefono:tel, fecha:iso(d), fase:f, nota:nota||"", avisado:""}); };
+    mk("Tapizar dos sillones", "Carmen Ejemplo", "600000001", 2, 5); mk("Arreglo de la cremallera de un abrigo", "Luis Ejemplo", "600000002", 3, 0);
+    mk("Mesa de roble a medida", "Ana Ejemplo", "600000003", 1, -2, "Falta el barniz, llega el jueves."); if (!S.negocio.nombre) S.negocio.nombre = "Taller Ejemplo"; guardar(); pintar(); },
+  licencia(){ dlgLicencia(); },
+  activar(){ const k = $("#l-clave").value.trim().toUpperCase(); if (licenciaValida(k)) { S.licencia = k; guardar(); cerrar(); pintar(); } else $("#l-msg").textContent = "Esa clave no es válida o ha caducado."; },
+  "guardar-ajustes"(){ const f = $("#a-fases").value.split("\n").map(x => x.trim()).filter(Boolean);
+    if (f.length < 2) return alert("Hacen falta al menos dos fases.");
+    // Si se quitan fases, ningún encargo puede quedarse apuntando a una que ya no existe.
+    S.pedidos.forEach(p => { if (p.fase >= S.fases.length - 1) p.fase = f.length - 1; else p.fase = Math.min(p.fase, f.length - 2); });
+    S.fases = f; S.negocio.nombre = $("#a-nombre").value.trim(); S.negocio.telefono = $("#a-tel").value.trim(); guardar(); pintar(); },
+  exportar(){ descargar("como-va-lo-mio-" + iso(hoy()) + ".json", JSON.stringify(S, null, 1)); },
+  importar(){ $("#fichero").click(); },
+  "borrar-todo"(){ if (!confirm("Se borrarán todos los encargos de este dispositivo. ¿Seguro?")) return; S = {v:1, negocio:S.negocio, fases:S.fases, pedidos:[], licencia:S.licencia}; guardar(); vista = "encargos"; pintar(); }
+};
+function arrancar(){
+  const m = /^#e=(.+)$/.exec(location.hash);
+  if (m) { try { return vistaCliente(descodificar(m[1])); } catch (x) { $("#app").innerHTML = '<div class="cli"><h1>Este enlace no es válido</h1><p>Pide al negocio que te envíe uno nuevo.</p></div>'; return; } }
+  pintar();
+}
+document.addEventListener("click", e => {
+  const ir = e.target.closest("[data-ir]"); if (ir) { vista = ir.dataset.ir; return pintar(); }
+  const a = e.target.closest("[data-accion]"); if (a) { const seguir = ACC[a.dataset.accion](); if (a.tagName === "A" && !seguir) e.preventDefault(); return; }
+  const p = e.target.closest("[data-pedido]"); if (p) dlgPedido(p.dataset.pedido);
+});
+document.addEventListener("change", e => {
+  const p = dlg.open && actual();
+  if (p && e.target.id === "p-fase") { p.fase = +e.target.value; guardar(); pintar(); dlgPedido(p.id); }
+  if (p && e.target.id === "p-fecha") { p.fecha = e.target.value; guardar(); pintar(); dlgPedido(p.id); }
+  if (p && e.target.id === "p-nota") { p.nota = e.target.value.trim(); guardar(); dlgPedido(p.id); }
+  if (e.target.id === "fichero" && e.target.files[0]) { const fr = new FileReader();
+    fr.onload = () => { try { const g = JSON.parse(fr.result); if (g.v !== 1 || !Array.isArray(g.pedidos)) throw 0;
+      if (confirm("La copia sustituirá lo que hay ahora en este dispositivo. ¿Continuar?")) { S = g; guardar(); pintar(); } } catch (x) { alert("Ese fichero no es una copia de ¿Cómo va lo mío?"); } };
+    fr.readAsText(e.target.files[0]); e.target.value = ""; }
+});
+dlg.addEventListener("click", e => { if (e.target === dlg) cerrar(); });
+window.addEventListener("hashchange", arrancar);
+arrancar();
+</script>
+</body>
+</html>

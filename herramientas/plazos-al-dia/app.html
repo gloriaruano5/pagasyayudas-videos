@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plazos al día</title>
+<meta name="description" content="Avisos de plazos y documentos pendientes para gestorías, asesorías y administradores de fincas.">
+<meta name="theme-color" content="#14342b">
+<style>
+:root{--verde:#14342b;--menta:#1f7a5c;--lima:#d6f26b;--rojo:#c0392b;--ambar:#b7791f;--fondo:#f4f6f3;--papel:#fff;--tinta:#18221e;--suave:#5a6b63;--raya:#d8dfda}
+@media (prefers-color-scheme:dark){:root{--fondo:#0e1714;--papel:#172420;--tinta:#eef4f0;--suave:#a9bab2;--raya:#2b3d36;--menta:#58c79f}}
+*{box-sizing:border-box}body{margin:0;background:var(--fondo);color:var(--tinta);font:17px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding-bottom:84px}
+header{background:var(--verde);color:#fff;padding:14px 16px}header h1{margin:0;font-size:1.2rem}header h1 b{color:var(--lima)}header p{margin:2px 0 0;font-size:.85rem;color:#c5d6cf}
+main{max-width:760px;margin:0 auto;padding:14px 14px 0}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--papel);border-top:1px solid var(--raya);display:flex;z-index:5}
+nav button{flex:1;border:0;background:none;color:var(--suave);font:inherit;font-size:.85rem;padding:12px 4px 14px;cursor:pointer}
+nav button[aria-current=page]{color:var(--menta);font-weight:700;box-shadow:inset 0 3px 0 var(--menta)}
+h2{font-size:1.05rem;margin:18px 0 8px}h3{font-size:1rem;margin:0}
+.caja{background:var(--papel);border:1px solid var(--raya);border-radius:12px;padding:14px;margin-bottom:10px}
+.cifras{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.cifras div{background:var(--papel);border:1px solid var(--raya);border-radius:12px;padding:10px 6px;text-align:center}
+.cifras b{display:block;font-size:1.5rem;line-height:1.1}.cifras span{font-size:.72rem;color:var(--suave)}
+.cifras .mal b{color:var(--rojo)}.cifras .ojo b{color:var(--ambar)}
+.fila{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:var(--papel);border:1px solid var(--raya);border-radius:12px;padding:11px 12px;margin-bottom:8px;font:inherit;color:inherit;cursor:pointer}
+.fila:hover{border-color:var(--menta)}.fila .dia{flex:0 0 58px;text-align:center;font-size:.78rem;color:var(--suave);line-height:1.2}
+.fila .dia b{display:block;font-size:1.25rem;color:var(--tinta)}.fila.vencida .dia b{color:var(--rojo)}
+.fila .txt{flex:1;min-width:0}.fila .txt strong{display:block;overflow-wrap:anywhere}.fila .txt span{font-size:.85rem;color:var(--suave)}
+.chip{display:inline-block;font-size:.72rem;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.chip.falta{background:#fde8e6;color:#8c2318}.chip.ok{background:#dff5ea;color:#145c40}.chip.gris{background:var(--raya);color:var(--tinta)}
+button.b,a.b{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--menta);background:var(--menta);color:#fff;font:inherit;font-weight:700;border-radius:10px;padding:10px 14px;cursor:pointer;text-decoration:none;margin:4px 6px 4px 0}
+@media (prefers-color-scheme:dark){button.b,a.b{color:#0e1714}}
+button.b.sec,a.b.sec{background:transparent;color:var(--menta)}button.b.pel{border-color:var(--rojo);background:transparent;color:var(--rojo)}
+label{display:block;font-size:.85rem;color:var(--suave);margin:10px 0 3px}
+input,select,textarea{width:100%;font:inherit;padding:10px 11px;border:1px solid var(--raya);border-radius:10px;background:var(--papel);color:var(--tinta)}
+:focus-visible{outline:3px solid var(--lima);outline-offset:2px}
+dialog{border:0;border-radius:16px;padding:0;width:min(560px,94vw);max-height:90vh;background:var(--papel);color:var(--tinta)}
+dialog::backdrop{background:rgba(0,0,0,.5)}dialog .dentro{padding:16px}
+.docs label{display:flex;gap:10px;align-items:flex-start;color:var(--tinta);font-size:1rem;margin:6px 0}.docs input{width:22px;height:22px;flex:0 0 22px;margin-top:1px}
+.nota{font-size:.85rem;color:var(--suave)}.vacio{text-align:center;color:var(--suave);padding:26px 10px}
+.entre{display:flex;justify-content:space-between;align-items:center;gap:8px}
+pre.msg{white-space:pre-wrap;background:var(--fondo);border-radius:10px;padding:10px;font:inherit;font-size:.92rem;margin:8px 0}
+</style>
+</head>
+<body>
+<header><h1>Plazos <b>al día</b></h1><p id="sub"></p></header>
+<main id="vista"></main>
+<nav id="nav">
+<button data-ir="hoy">Hoy</button><button data-ir="clientes">Clientes</button><button data-ir="ajustes">Ajustes</button>
+</nav>
+<dialog id="dlg"><div class="dentro" id="dlgc"></div></dialog>
+<script>
+"use strict";
+// ───── Configuración comercial: lo único que hay que tocar antes de vender ─────
+const VENTA = {
+  gratis: 3,            // clientes que se pueden llevar sin licencia
+  precio: "19 € al mes o 190 € al año",
+  pago: "",             // enlace de pago (Stripe, PayPal…). Vacío = no se enseña botón
+  contacto: ""          // correo o teléfono para pedir la licencia
+};
+const SAL = "plazos-al-dia/2026";   // debe coincidir con licencias.py
+
+// ───── Paquetes de obligaciones ─────
+// Fechas del calendario general (MM-DD). Son un punto de partida editable:
+// cada tarea se puede mover, y hay festivos locales que aquí no se conocen.
+const TRI = ["04-20","07-20","10-20","01-30"], TRI20 = ["04-20","07-20","10-20","01-20"];
+const PAQUETES = {
+  autonomo:{n:"Autónomo",items:[
+    {t:"IVA trimestral (modelo 303)",f:TRI,d:["Facturas emitidas del trimestre","Facturas recibidas del trimestre"]},
+    {t:"Pago fraccionado del IRPF (modelo 130)",f:TRI,d:["Ingresos y gastos del trimestre"]},
+    {t:"Resumen anual del IVA (modelo 390)",f:["01-30"],d:[]},
+    {t:"Declaración de la renta",f:["06-30"],d:["Datos fiscales","Certificados de retenciones","Recibos de alquiler o hipoteca"]}]},
+  retenciones:{n:"Con trabajadores o local alquilado",items:[
+    {t:"Retenciones de trabajadores y profesionales (modelo 111)",f:TRI20,d:["Nóminas del trimestre","Facturas de profesionales con retención"]},
+    {t:"Retenciones del alquiler (modelo 115)",f:TRI20,d:["Recibos del alquiler del local"]},
+    {t:"Resumen anual de retenciones (modelo 190)",f:["01-31"],d:[]},
+    {t:"Resumen anual de alquileres (modelo 180)",f:["01-31"],d:[]}]},
+  sociedad:{n:"Sociedad",items:[
+    {t:"IVA trimestral (modelo 303)",f:TRI,d:["Facturas emitidas del trimestre","Facturas recibidas del trimestre"]},
+    {t:"Resumen anual del IVA (modelo 390)",f:["01-30"],d:[]},
+    {t:"Operaciones con terceros (modelo 347)",f:["02-28"],d:["Listado de clientes y proveedores de más de 3.005,06 €"]},
+    {t:"Impuesto sobre Sociedades (modelo 200)",f:["07-25"],d:["Balance y cuenta de resultados","Extractos bancarios del ejercicio"]},
+    {t:"Depósito de las cuentas anuales",f:["07-30"],d:["Acta de aprobación de cuentas firmada"]}]},
+  comunidad:{n:"Comunidad de propietarios",aviso:"Las fechas de la comunidad son de ejemplo: cámbialas por las reales.",items:[
+    {t:"Enviar la convocatoria de la junta ordinaria",f:["03-01"],d:["Orden del día"]},
+    {t:"Junta general ordinaria",f:["03-15"],d:["Cuentas del ejercicio","Presupuesto del año","Listado de propietarios con deuda"]},
+    {t:"Enviar el acta de la junta",f:["03-25"],d:["Acta firmada por el presidente"]},
+    {t:"Reclamar cuotas pendientes",f:["04-10","07-10","10-10","01-10"],d:["Listado de recibos devueltos"]},
+    {t:"Renovación del seguro del edificio",f:["01-02"],d:["Póliza actual","Ofertas para comparar"]},
+    {t:"Revisión anual de extintores",f:["05-15"],d:["Certificado de la empresa mantenedora"]},
+    {t:"Inspección periódica del ascensor",f:["09-15"],d:["Acta de la última inspección"]},
+    {t:"Operaciones con terceros (modelo 347), si procede",f:["02-28"],d:["Facturas de proveedores de más de 3.005,06 €"]}]}
+};
+const TIPOS = {autonomo:"Autónomo",sociedad:"Sociedad",comunidad:"Comunidad de propietarios",particular:"Particular"};
+const MESES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+const MESL = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+
+// ───── Estado ─────
+const CLAVE = "plazos-al-dia";
+let S = {v:1, despacho:{nombre:"",antelacion:5}, clientes:[], tareas:[], licencia:""};
+try { const g = JSON.parse(localStorage.getItem(CLAVE)); if (g && g.v === 1) S = g; } catch (e) {}
+const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify(S)); } catch (e) {} };
+let vista = "hoy", clienteAbierto = null;
+
+// ───── Utilidades ─────
+const $ = s => document.querySelector(s);
+const h = t => String(t ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const iso = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+const fecha = s => { const [a,m,d] = s.split("-").map(Number); return new Date(a, m-1, d); };
+const hoy = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
+const dias = s => Math.round((fecha(s) - hoy()) / 864e5);
+const larga = s => { const d = fecha(s); return DIAS[d.getDay()] + " " + d.getDate() + " de " + MESL[d.getMonth()]; };
+// Un plazo que cae en fin de semana pasa al lunes; los festivos no se conocen aquí.
+function habil(d){ const g = d.getDay(); if (g === 6) d.setDate(d.getDate()+2); if (g === 0) d.setDate(d.getDate()+1); return d; }
+function proxima(mmdd){
+  const [m,d] = mmdd.split("-").map(Number), h0 = hoy();
+  let f = habil(new Date(h0.getFullYear(), m-1, d));
+  if (f < h0) f = habil(new Date(h0.getFullYear()+1, m-1, d));
+  return iso(f);
+}
+function telefono(t){ let n = String(t||"").replace(/\D/g,""); if (n.length === 9) n = "34" + n; return n; }
+const cliente = id => S.clientes.find(c => c.id === id);
+const faltan = t => t.docs.filter(d => !d.ok).length;
+
+// ───── Licencia ─────
+// Comprobación sin servidor: frena el uso casual, no a quien sepa programar.
+function fnv(s){ let x = 0x811c9dc5; for (let i = 0; i < s.length; i++){ x ^= s.charCodeAt(i); x = Math.imul(x, 0x01000193) >>> 0; } return x; }
+function licenciaValida(k){
+  const m = /^PAD-(\d{2})(\d{2})-([0-9A-Z]{6})$/.exec(String(k||"").trim().toUpperCase());
+  if (!m) return false;
+  if (fnv(SAL + m[1] + m[2]).toString(36).toUpperCase().padStart(6,"0").slice(-6) !== m[3]) return false;
+  return new Date(2000 + +m[1], +m[2], 1) > new Date();       // vale hasta el fin de ese mes
+}
+const conLicencia = () => licenciaValida(S.licencia);
+
+// ───── Avisos ─────
+function textoAviso(t){
+  const c = cliente(t.cliente), pend = t.docs.filter(d => !d.ok);
+  const quien = S.despacho.nombre ? "Te escribimos de " + S.despacho.nombre + ". " : "";
+  let m = "Hola, " + c.nombre.split(" ")[0] + ". " + quien;
+  if (pend.length){
+    const lim = fecha(t.fecha); lim.setDate(lim.getDate() - (S.despacho.antelacion || 5));
+    const antes = lim > hoy() ? larga(iso(lim)) : "lo antes posible";
+    m += "Para «" + t.titulo + "», que vence el " + larga(t.fecha) + ", nos falta:\n" +
+         pend.map(d => "• " + d.texto).join("\n") + "\n¿Nos lo puedes enviar " + (antes === "lo antes posible" ? antes : "antes del " + antes) + "? Gracias.";
+  } else {
+    m += "Te recordamos que el " + larga(t.fecha) + " vence «" + t.titulo + "». Ya tenemos todo lo necesario; te avisamos cuando esté presentado.";
+  }
+  return m;
+}
+
+// ───── Vistas ─────
+function filaTarea(t){
+  const c = cliente(t.cliente), d = fecha(t.fecha), n = dias(t.fecha), f = faltan(t);
+  const chip = t.hecho ? '<span class="chip ok">Hecho</span>' : f ? '<span class="chip falta">Faltan ' + f + '</span>' : '<span class="chip ok">Todo recibido</span>';
+  return '<button class="fila' + (n < 0 && !t.hecho ? " vencida" : "") + '" data-tarea="' + t.id + '"><span class="dia"><b>' + d.getDate() + '</b>' + MESES[d.getMonth()] +
+    '</span><span class="txt"><strong>' + h(t.titulo) + '</strong><span>' + h(c ? c.nombre : "") + '</span></span>' + chip + '</button>';
+}
+function vistaHoy(){
+  const pend = S.tareas.filter(t => !t.hecho).sort((a,b) => a.fecha.localeCompare(b.fecha));
+  const venc = pend.filter(t => dias(t.fecha) < 0), sem = pend.filter(t => dias(t.fecha) >= 0 && dias(t.fecha) <= 7),
+        mes = pend.filter(t => dias(t.fecha) > 7 && dias(t.fecha) <= 30), tri = pend.filter(t => dias(t.fecha) > 30 && dias(t.fecha) <= 90), docs = pend.filter(t => dias(t.fecha) <= 30).reduce((n,t) => n + faltan(t), 0);
+  if (!S.clientes.length) return '<div class="caja vacio"><p><strong>Todavía no hay clientes.</strong></p><p>Añade el primero o carga un ejemplo para ver cómo funciona.</p>' +
+    '<button class="b" data-accion="nuevo-cliente">Añadir cliente</button><button class="b sec" data-accion="ejemplo">Cargar ejemplo</button></div>';
+  const grupo = (titulo, lista) => lista.length ? "<h2>" + titulo + " (" + lista.length + ")</h2>" + lista.map(filaTarea).join("") : "";
+  const avisar = pend.filter(t => dias(t.fecha) <= 14 && faltan(t));
+  return '<div class="cifras"><div class="mal"><b>' + venc.length + '</b><span>vencidas</span></div><div class="ojo"><b>' + sem.length + '</b><span>esta semana</span></div>' +
+    '<div><b>' + mes.length + '</b><span>este mes</span></div><div class="ojo"><b>' + docs + '</b><span>papeles por recibir</span></div></div>' +
+    (avisar.length ? '<div class="caja" style="margin-top:10px"><div class="entre"><span><strong>' + avisar.length + '</strong> ' + (avisar.length === 1 ? "plazo de los próximos 14 días espera" : "plazos de los próximos 14 días esperan") + ' papeles del cliente.</span>' +
+      '<button class="b" data-accion="ronda">Avisar</button></div></div>' : "") +
+    grupo("Vencidas", venc) + grupo("Esta semana", sem) + grupo("Próximos 30 días", mes) + grupo("De uno a tres meses", tri) +
+    (!venc.length && !sem.length && !mes.length && !tri.length ? '<div class="caja vacio">Nada vence en los próximos tres meses.</div>' : "");
+}
+function vistaClientes(){
+  if (clienteAbierto && cliente(clienteAbierto)) return vistaCliente(cliente(clienteAbierto));
+  const lista = [...S.clientes].sort((a,b) => a.nombre.localeCompare(b.nombre, "es"));
+  return '<div class="entre"><h2>Clientes (' + lista.length + ')</h2><button class="b" data-accion="nuevo-cliente">Añadir</button></div>' +
+    (lista.length ? lista.map(c => { const p = S.tareas.filter(t => t.cliente === c.id && !t.hecho);
+      return '<button class="fila" data-cliente="' + c.id + '"><span class="txt"><strong>' + h(c.nombre) + '</strong><span>' + h(TIPOS[c.tipo]) + ' · ' + p.length + ' plazos abiertos</span></span>' +
+        (p.some(t => dias(t.fecha) < 0) ? '<span class="chip falta">Vencido</span>' : "") + '</button>'; }).join("")
+      : '<div class="caja vacio">Aún no hay clientes.</div>') +
+    (!conLicencia() ? '<p class="nota">Versión gratuita: hasta ' + VENTA.gratis + ' clientes. <a href="#" data-accion="licencia">Quitar el límite</a></p>' : "");
+}
+function vistaCliente(c){
+  const ts = S.tareas.filter(t => t.cliente === c.id).sort((a,b) => (a.hecho - b.hecho) || a.fecha.localeCompare(b.fecha));
+  return '<button class="b sec" data-accion="volver">‹ Clientes</button><div class="caja"><div class="entre"><h3>' + h(c.nombre) + '</h3><span class="chip gris">' + h(TIPOS[c.tipo]) + '</span></div>' +
+    '<p class="nota">' + [c.telefono, c.email].filter(Boolean).map(h).join(" · ") + (c.notas ? "<br>" + h(c.notas) : "") + '</p>' +
+    '<button class="b sec" data-accion="editar-cliente">Editar</button><button class="b sec" data-accion="paquete">Añadir paquete de plazos</button>' +
+    '<button class="b sec" data-accion="nueva-tarea">Añadir un plazo</button></div>' +
+    (ts.length ? ts.map(filaTarea).join("") : '<div class="caja vacio">Este cliente no tiene plazos.</div>');
+}
+function vistaAjustes(){
+  return '<div class="caja"><h3>Tu despacho</h3><label for="a-nombre">Nombre (firma los avisos)</label><input id="a-nombre" value="' + h(S.despacho.nombre) + '">' +
+    '<label for="a-ant">Pedir los papeles con estos días de margen</label><input id="a-ant" type="number" min="1" max="30" value="' + h(S.despacho.antelacion) + '">' +
+    '<button class="b" data-accion="guardar-ajustes">Guardar</button></div>' +
+    '<div class="caja"><h3>Licencia</h3><p class="nota">' + (conLicencia() ? "Licencia activa: clientes sin límite." : "Versión gratuita: hasta " + VENTA.gratis + " clientes.") + '</p>' +
+    '<button class="b sec" data-accion="licencia">' + (conLicencia() ? "Cambiar la clave" : "Tengo una clave") + '</button></div>' +
+    '<div class="caja"><h3>Tus datos</h3><p class="nota">Todo se guarda solo en este dispositivo: no hay servidor ni cuenta. Haz una copia de vez en cuando.</p>' +
+    '<button class="b sec" data-accion="exportar">Descargar copia</button><button class="b sec" data-accion="importar">Restaurar copia</button>' +
+    '<button class="b sec" data-accion="ics">Pasar los plazos al calendario</button><input type="file" id="fichero" accept="application/json" hidden></div>' +
+    '<div class="caja"><h3>Sobre las fechas</h3><p class="nota">Los paquetes usan el calendario general y pasan al lunes lo que cae en fin de semana. No conocen los festivos ni los cambios de cada año: ' +
+    'comprueba siempre el calendario del contribuyente de la Agencia Tributaria.</p><button class="b pel" data-accion="borrar-todo">Borrar todos los datos</button></div>';
+}
+function pintar(){
+  $("#sub").textContent = S.despacho.nombre || "Que ningún plazo se pase por un papel que no llegó";
+  document.querySelectorAll("#nav button").forEach(b => b.setAttribute("aria-current", b.dataset.ir === vista ? "page" : "false"));
+  $("#vista").innerHTML = vista === "hoy" ? vistaHoy() : vista === "clientes" ? vistaClientes() : vistaAjustes();
+}
+
+// ───── Diálogos ─────
+const dlg = $("#dlg");
+// El id abierto va en una variable y no como data-* del <dialog>: el clic general
+// lo tomaría por una fila de la lista y repintaría antes de aplicar el cambio.
+const abierta = {};
+function abrir(html){ $("#dlgc").innerHTML = html; if (!dlg.open) dlg.showModal(); }
+const cerrar = () => dlg.open && dlg.close();
+function dlgTarea(id){
+  const t = S.tareas.find(x => x.id === id); if (!t) return cerrar();
+  const c = cliente(t.cliente), tel = telefono(c.telefono), msg = textoAviso(t);
+  abrir('<div class="entre"><h3>' + h(t.titulo) + '</h3><button class="b sec" data-accion="cerrar" aria-label="Cerrar">✕</button></div>' +
+    '<p class="nota">' + h(c.nombre) + ' · vence el ' + larga(t.fecha) + (t.avisado ? " · último aviso: " + larga(t.avisado) : "") + '</p>' +
+    '<div class="docs">' + (t.docs.length ? t.docs.map((d,i) => '<label><input type="checkbox" data-doc="' + i + '"' + (d.ok ? " checked" : "") + '> ' + h(d.texto) + '</label>').join("")
+      : '<p class="nota">Sin documentos que pedir.</p>') + '</div>' +
+    '<label for="t-doc">Añadir un documento que hay que pedir</label><div class="entre"><input id="t-doc"><button class="b sec" data-accion="add-doc">Añadir</button></div>' +
+    '<h3 style="margin-top:14px">Aviso para el cliente</h3><pre class="msg" id="t-msg">' + h(msg) + '</pre>' +
+    (tel ? '<a class="b" data-accion="avisado" target="_blank" rel="noopener" href="https://wa.me/' + tel + '?text=' + encodeURIComponent(msg) + '">WhatsApp</a>' : "") +
+    (c.email ? '<a class="b sec" data-accion="avisado" href="mailto:' + encodeURIComponent(c.email) + '?subject=' + encodeURIComponent(t.titulo) + '&body=' + encodeURIComponent(msg) + '">Correo</a>' : "") +
+    '<button class="b sec" data-accion="copiar">Copiar</button>' + (!tel && !c.email ? '<p class="nota">Añade un teléfono o un correo al cliente para enviarlo con un toque.</p>' : "") +
+    '<label for="t-fecha">Fecha del plazo</label><input id="t-fecha" type="date" value="' + t.fecha + '">' +
+    '<div style="margin-top:10px"><button class="b" data-accion="hecho">' + (t.hecho ? "Reabrir" : "Marcar como hecho") + '</button><button class="b pel" data-accion="borrar-tarea">Borrar</button></div>');
+  abierta.tarea = id;
+}
+function dlgCliente(c){
+  abrir('<h3>' + (c ? "Editar cliente" : "Nuevo cliente") + '</h3><label for="c-nombre">Nombre</label><input id="c-nombre" value="' + h(c ? c.nombre : "") + '">' +
+    '<label for="c-tipo">Tipo</label><select id="c-tipo">' + Object.entries(TIPOS).map(([k,v]) => '<option value="' + k + '"' + (c && c.tipo === k ? " selected" : "") + '>' + v + '</option>').join("") + '</select>' +
+    '<label for="c-tel">Teléfono (para WhatsApp)</label><input id="c-tel" type="tel" value="' + h(c ? c.telefono : "") + '">' +
+    '<label for="c-email">Correo</label><input id="c-email" type="email" value="' + h(c ? c.email : "") + '">' +
+    '<label for="c-notas">Notas</label><textarea id="c-notas" rows="2">' + h(c ? c.notas : "") + '</textarea>' +
+    '<div style="margin-top:10px"><button class="b" data-accion="guardar-cliente">Guardar</button><button class="b sec" data-accion="cerrar">Cancelar</button>' +
+    (c ? '<button class="b pel" data-accion="borrar-cliente">Borrar cliente</button>' : "") + '</div>');
+  abierta.cliente = c ? c.id : "";
+}
+function dlgPaquete(c){
+  const sug = c.tipo === "comunidad" ? "comunidad" : c.tipo === "sociedad" ? "sociedad" : "autonomo";
+  abrir('<h3>Paquete de plazos para ' + h(c.nombre) + '</h3><p class="nota">Crea de una vez los plazos de los próximos doce meses, con los papeles que hay que pedir en cada uno.</p>' +
+    Object.entries(PAQUETES).map(([k,p]) => '<div class="docs"><label><input type="checkbox" data-paq="' + k + '"' + (k === sug ? " checked" : "") + '> <span><strong>' + p.n + '</strong><br><span class="nota">' +
+      p.items.map(i => h(i.t)).join(" · ") + (p.aviso ? "<br>" + h(p.aviso) : "") + '</span></span></label></div>').join("") +
+    '<button class="b" data-accion="crear-paquete">Crear plazos</button><button class="b sec" data-accion="cerrar">Cancelar</button>');
+}
+function dlgNuevaTarea(){
+  abrir('<h3>Nuevo plazo</h3><label for="n-titulo">Qué vence</label><input id="n-titulo"><label for="n-fecha">Cuándo</label><input id="n-fecha" type="date" value="' + iso(hoy()) + '">' +
+    '<label for="n-docs">Papeles que hay que pedir (uno por línea)</label><textarea id="n-docs" rows="3"></textarea>' +
+    '<div style="margin-top:10px"><button class="b" data-accion="crear-tarea">Guardar</button><button class="b sec" data-accion="cerrar">Cancelar</button></div>');
+}
+function dlgLicencia(){
+  const comprar = VENTA.pago ? '<a class="b" href="' + h(VENTA.pago) + '" target="_blank" rel="noopener">Comprar licencia</a>' : "";
+  const pedir = VENTA.contacto ? '<p class="nota">Pídela en ' + h(VENTA.contacto) + '.</p>' : '<p class="nota">Pide tu clave a quien te ha facilitado esta herramienta.</p>';
+  abrir('<h3>Clientes sin límite</h3><p>La versión gratuita lleva hasta ' + VENTA.gratis + ' clientes. La licencia quita el límite: ' + h(VENTA.precio) + '.</p>' + comprar + pedir +
+    '<label for="l-clave">Clave de licencia</label><input id="l-clave" placeholder="PAD-0000-XXXXXX" value="' + h(S.licencia) + '"><p class="nota" id="l-msg" role="status"></p>' +
+    '<button class="b" data-accion="activar">Activar</button><button class="b sec" data-accion="cerrar">Cerrar</button>');
+}
+function dlgRonda(){
+  const ts = S.tareas.filter(t => !t.hecho && dias(t.fecha) <= 14 && faltan(t)).sort((a,b) => a.fecha.localeCompare(b.fecha));
+  abrir('<div class="entre"><h3>Avisos pendientes</h3><button class="b sec" data-accion="cerrar" aria-label="Cerrar">✕</button></div>' +
+    '<p class="nota">Un toque abre WhatsApp con el mensaje ya escrito; tú solo pulsas enviar.</p>' +
+    (ts.length ? ts.map(t => { const c = cliente(t.cliente), tel = telefono(c.telefono), m = textoAviso(t);
+      return '<div class="caja"><strong>' + h(c.nombre) + '</strong><br><span class="nota">' + h(t.titulo) + ' · ' + larga(t.fecha) + ' · faltan ' + faltan(t) + (t.avisado ? " · avisado el " + larga(t.avisado) : "") + '</span><br>' +
+        (tel ? '<a class="b" data-ronda="' + t.id + '" target="_blank" rel="noopener" href="https://wa.me/' + tel + '?text=' + encodeURIComponent(m) + '">WhatsApp</a>' : "") +
+        (c.email ? '<a class="b sec" data-ronda="' + t.id + '" href="mailto:' + encodeURIComponent(c.email) + '?subject=' + encodeURIComponent(t.titulo) + '&body=' + encodeURIComponent(m) + '">Correo</a>' : "") +
+        (!tel && !c.email ? '<span class="nota">Sin teléfono ni correo.</span>' : "") + '</div>'; }).join("") : '<div class="vacio">No hay nada que reclamar.</div>'));
+}
+
+// ───── Acciones ─────
+function nuevaTarea(cid, titulo, f, docs, extra){
+  S.tareas.push(Object.assign({id:uid(), cliente:cid, titulo, fecha:f, docs:docs.map(x => ({texto:x, ok:false})), hecho:false, avisado:""}, extra || {}));
+}
+function descargar(nombre, texto, tipo){
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([texto], {type:tipo})); a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
+}
+function cargarEjemplo(){
+  const mk = (nombre, tipo, tel) => { const c = {id:uid(), nombre, tipo, telefono:tel, email:"", notas:"Cliente de ejemplo"}; S.clientes.push(c); return c; };
+  const a = mk("Marta Ejemplo (autónoma)", "autonomo", "600000001"), b = mk("Comunidad Calle Mayor 12", "comunidad", "600000002");
+  PAQUETES.autonomo.items.forEach(i => i.f.forEach(f => nuevaTarea(a.id, i.t, proxima(f), i.d)));
+  PAQUETES.comunidad.items.forEach(i => i.f.forEach(f => nuevaTarea(b.id, i.t, proxima(f), i.d)));
+  const d = hoy(); d.setDate(d.getDate() + 4); nuevaTarea(a.id, "Alta en el censo de una nueva actividad (modelo 036)", iso(d), ["DNI","Contrato del local"]);
+  if (!S.despacho.nombre) S.despacho.nombre = "Asesoría Ejemplo";
+}
+const ACC = {
+  cerrar,
+  "nuevo-cliente"(){ if (!conLicencia() && S.clientes.length >= VENTA.gratis) return dlgLicencia(); dlgCliente(null); },
+  "editar-cliente"(){ dlgCliente(cliente(clienteAbierto)); },
+  "guardar-cliente"(){
+    const nombre = $("#c-nombre").value.trim(); if (!nombre) return $("#c-nombre").focus();
+    const datos = {nombre, tipo:$("#c-tipo").value, telefono:$("#c-tel").value.trim(), email:$("#c-email").value.trim(), notas:$("#c-notas").value.trim()};
+    let c = cliente(abierta.cliente);
+    if (c) Object.assign(c, datos); else { c = Object.assign({id:uid()}, datos); S.clientes.push(c); }
+    guardar(); clienteAbierto = c.id; vista = "clientes"; pintar();
+    if (!abierta.cliente) dlgPaquete(c); else cerrar();
+  },
+  "borrar-cliente"(){ const c = cliente(abierta.cliente); if (!confirm("¿Borrar a " + c.nombre + " y todos sus plazos?")) return;
+    S.tareas = S.tareas.filter(t => t.cliente !== c.id); S.clientes = S.clientes.filter(x => x.id !== c.id); clienteAbierto = null; guardar(); cerrar(); pintar(); },
+  paquete(){ dlgPaquete(cliente(clienteAbierto)); },
+  "crear-paquete"(){ const c = cliente(clienteAbierto); let n = 0;
+    document.querySelectorAll("[data-paq]:checked").forEach(x => PAQUETES[x.dataset.paq].items.forEach(i => i.f.forEach(f => { nuevaTarea(c.id, i.t, proxima(f), i.d); n++; })));
+    guardar(); cerrar(); pintar(); },
+  "nueva-tarea"(){ dlgNuevaTarea(); },
+  "crear-tarea"(){ const t = $("#n-titulo").value.trim(), f = $("#n-fecha").value; if (!t || !f) return $("#n-titulo").focus();
+    nuevaTarea(clienteAbierto, t, f, $("#n-docs").value.split("\n").map(x => x.trim()).filter(Boolean)); guardar(); cerrar(); pintar(); },
+  volver(){ clienteAbierto = null; pintar(); },
+  "add-doc"(){ const v = $("#t-doc").value.trim(); if (!v) return; S.tareas.find(t => t.id === abierta.tarea).docs.push({texto:v, ok:false}); guardar(); dlgTarea(abierta.tarea); pintar(); },
+  hecho(){ const t = S.tareas.find(x => x.id === abierta.tarea); t.hecho = !t.hecho; guardar(); cerrar(); pintar(); },
+  "borrar-tarea"(){ if (!confirm("¿Borrar este plazo?")) return; S.tareas = S.tareas.filter(t => t.id !== abierta.tarea); guardar(); cerrar(); pintar(); },
+  avisado(){ S.tareas.find(t => t.id === abierta.tarea).avisado = iso(hoy()); guardar(); pintar(); return true; },
+  copiar(){ navigator.clipboard && navigator.clipboard.writeText($("#t-msg").textContent); },
+  ronda(){ dlgRonda(); },
+  ejemplo(){ cargarEjemplo(); guardar(); pintar(); },
+  licencia(){ dlgLicencia(); },
+  activar(){ const k = $("#l-clave").value.trim().toUpperCase();
+    if (licenciaValida(k)) { S.licencia = k; guardar(); cerrar(); pintar(); } else $("#l-msg").textContent = "Esa clave no es válida o ha caducado."; },
+  "guardar-ajustes"(){ S.despacho.nombre = $("#a-nombre").value.trim(); S.despacho.antelacion = Math.max(1, +$("#a-ant").value || 5); guardar(); pintar(); },
+  exportar(){ descargar("plazos-al-dia-" + iso(hoy()) + ".json", JSON.stringify(S, null, 1), "application/json"); },
+  importar(){ $("#fichero").click(); },
+  ics(){ const p = S.tareas.filter(t => !t.hecho), sello = iso(hoy()).replace(/-/g,"") + "T000000Z";
+    const esc = s => String(s).replace(/([,;\\])/g, "\\$1").replace(/\n/g, "\\n");
+    descargar("plazos.ics", "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Plazos al dia//ES\r\n" + p.map(t => { const d = fecha(t.fecha), s = new Date(d); s.setDate(s.getDate()+1);
+      return "BEGIN:VEVENT\r\nUID:" + t.id + "@plazosaldia\r\nDTSTAMP:" + sello + "\r\nDTSTART;VALUE=DATE:" + iso(d).replace(/-/g,"") + "\r\nDTEND;VALUE=DATE:" + iso(s).replace(/-/g,"") +
+        "\r\nSUMMARY:" + esc(t.titulo + " · " + (cliente(t.cliente) || {}).nombre) + "\r\nEND:VEVENT\r\n"; }).join("") + "END:VCALENDAR\r\n", "text/calendar"); },
+  "borrar-todo"(){ if (!confirm("Se borrarán todos los clientes y plazos de este dispositivo. ¿Seguro?")) return;
+    S = {v:1, despacho:{nombre:"",antelacion:5}, clientes:[], tareas:[], licencia:S.licencia}; guardar(); vista = "hoy"; pintar(); }
+};
+document.addEventListener("click", e => {
+  const ir = e.target.closest("[data-ir]"); if (ir) { vista = ir.dataset.ir; clienteAbierto = null; return pintar(); }
+  const r = e.target.closest("[data-ronda]"); if (r) { S.tareas.find(t => t.id === r.dataset.ronda).avisado = iso(hoy()); guardar(); pintar(); return; }
+  const a = e.target.closest("[data-accion]"); if (a) { const seguir = ACC[a.dataset.accion](); if (a.tagName === "A" && !seguir) e.preventDefault(); return; }
+  const t = e.target.closest("[data-tarea]"); if (t) return dlgTarea(t.dataset.tarea);
+  const c = e.target.closest("[data-cliente]"); if (c) { clienteAbierto = c.dataset.cliente; vista = "clientes"; pintar(); }
+});
+document.addEventListener("change", e => {
+  if (e.target.dataset.doc !== undefined) { const t = S.tareas.find(x => x.id === abierta.tarea); t.docs[+e.target.dataset.doc].ok = e.target.checked; guardar(); dlgTarea(t.id); pintar(); }
+  if (e.target.id === "t-fecha" && e.target.value) { S.tareas.find(x => x.id === abierta.tarea).fecha = e.target.value; guardar(); dlgTarea(abierta.tarea); pintar(); }
+  if (e.target.id === "fichero" && e.target.files[0]) { const fr = new FileReader();
+    fr.onload = () => { try { const g = JSON.parse(fr.result); if (g.v !== 1 || !Array.isArray(g.clientes)) throw 0;
+      if (confirm("La copia sustituirá lo que hay ahora en este dispositivo. ¿Continuar?")) { S = g; guardar(); pintar(); } } catch (x) { alert("Ese fichero no es una copia de Plazos al día."); } };
+    fr.readAsText(e.target.files[0]); e.target.value = ""; }
+});
+dlg.addEventListener("click", e => { if (e.target === dlg) cerrar(); });
+pintar();
+</script>
+</body>
+</html>
